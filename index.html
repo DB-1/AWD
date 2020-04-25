@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>AWD_CLient</title>
+    <style type="text/css">
+        body {
+            font: normal 14px Verdana;
+        }
+
+        h1 {
+            font-size: 24px;
+        }
+
+        h2 {
+            font-size: 18px;
+        }
+
+        #sidebar {
+            float: right;
+            width: 30%;
+        }
+
+        #main {
+            padding-right: 15px;
+        }
+
+        .infoWindow {
+            width: 220px;
+        }
+
+    </style>
+    <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+    <script type="text/javascript">
+        var map;
+
+        // York City Centre
+        var center = new google.maps.LatLng(53.957741, -1.082260);
+
+       
+
+        var geocoder = new google.maps.Geocoder();
+        var infowindow = new google.maps.InfoWindow();
+
+        function init() {
+
+            var mapOptions = {
+                zoom: 13,
+                center: center,
+                mapTypeId: google.maps.MapTypeId.ROADMAP
+            }
+
+            map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+
+            makeRequest(function(data) {
+
+                var data = JSON.parse(data.responseText);
+
+                for (var i = 0; i < data.length; i++) {
+                    displayLocation(data[i]);
+                }
+            });
+        }
+
+        //Displays the data points on the map
+        function displayLocation(location) {
+
+            var content = '<div class="infoWindow"><strong>' + location.name + '</strong>' +
+                '<br/>' + location.address +
+                '<br/>' + location.description + '</div>';
+
+            if (parseInt(location.lat) == 0) {
+                geocoder.geocode({
+                    'address': location.address
+                }, function(results, status) {
+                    if (status == google.maps.GeocoderStatus.OK) {
+
+                        var marker = new google.maps.Marker({
+                            map: map,
+                            position: results[0].geometry.location,
+                            title: location.name
+                        });
+
+                        google.maps.event.addListener(marker, 'click', function() {
+                            infowindow.setContent(content);
+                            infowindow.open(map, marker);
+                        });
+                    }
+                });
+            } else {
+                var position = new google.maps.LatLng(parseFloat(location.lat), parseFloat(location.lon));
+                var marker = new google.maps.Marker({
+                    map: map,
+                    position: position,
+                    title: location.name
+                });
+
+                google.maps.event.addListener(marker, 'click', function() {
+                    infowindow.setContent(content);
+                    infowindow.open(map, marker);
+                });
+            }
+        }
+        //Makes a request for the data from the server route
+        function makeRequest(callback) {
+            var request;
+            if (window.XMLHttpRequest) {
+                request = new XMLHttpRequest(); 
+            } else {
+                request = new ActiveXObject("Microsoft.XMLHTTP"); 
+            }
+            request.onreadystatechange = function() {
+                if (request.readyState == 4 && request.status == 200) {
+                    callback(request);
+                }
+            }
+            var jsonString = "{id : \"dbMap\"}";
+            request.open("GET", "http://localhost:5032/" + jsonString, true);
+            request.send();
+        }
+
+    </script>
+</head>
+
+<body onload="init();">
+
+    <h1>Team Locations</h1>
+
+    <section id="sidebar">
+        <div id="directions_panel"></div>
+    </section>
+
+    <section id="main">
+        <div id="map_canvas" style="width: 70%; height: 500px;"></div>
+    </section>
+
+</body>
+
+</html>
